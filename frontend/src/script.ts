@@ -43,6 +43,16 @@ document.addEventListener('DOMContentLoaded', () => {
   const agentCardUrlInput = document.getElementById(
     'agent-card-url',
   ) as HTMLInputElement;
+  const httpHeadersToggle = document.getElementById(
+    'http-headers-toggle',
+  ) as HTMLElement;
+  const httpHeadersContent = document.getElementById(
+    'http-headers-content',
+  ) as HTMLElement;
+  const headersList = document.getElementById('headers-list') as HTMLElement;
+  const addHeaderBtn = document.getElementById(
+    'add-header-btn',
+  ) as HTMLButtonElement;
   const collapsibleHeader = document.querySelector(
     '.collapsible-header',
   ) as HTMLElement;
@@ -108,6 +118,66 @@ document.addEventListener('DOMContentLoaded', () => {
     collapsibleContent.classList.toggle('collapsed');
   });
 
+  // HTTP Headers toggle functionality
+  httpHeadersToggle.addEventListener('click', () => {
+    const isExpanded = httpHeadersContent.classList.toggle('expanded');
+    const toggleIcon = httpHeadersToggle.querySelector('.toggle-icon');
+    if (toggleIcon) {
+      toggleIcon.textContent = isExpanded ? '▼' : '►';
+    }
+  });
+
+  // Add a new, empty header field when the button is clicked
+  addHeaderBtn.addEventListener('click', () => addHeaderField());
+
+  headersList.addEventListener('click', event => {
+    const removeBtn = (event.target as HTMLElement).closest(
+      '.remove-header-btn',
+    );
+    if (removeBtn) {
+      removeBtn.closest('.header-item')?.remove();
+    }
+  });
+
+  // Function to add a new header field
+  function addHeaderField(name = '', value = '') {
+    const headerItemHTML = `
+      <div class="header-item">
+        <input type="text" class="header-name" placeholder="Header Name" value="${name}">
+        <input type="text" class="header-value" placeholder="Header Value" value="${value}">
+        <button type="button" class="remove-header-btn" aria-label="Remove header">×</button>
+      </div>
+    `;
+    headersList.insertAdjacentHTML('beforeend', headerItemHTML);
+  }
+
+  // Function to collect all headers
+  function getCustomHeaders(): Record<string, string> {
+    const headerItems = headersList.querySelectorAll('.header-item');
+
+    return Array.from(headerItems).reduce(
+      (headers, item) => {
+        const nameInput = item.querySelector(
+          '.header-name',
+        ) as HTMLInputElement;
+        const valueInput = item.querySelector(
+          '.header-value',
+        ) as HTMLInputElement;
+
+        const name = nameInput?.value.trim();
+        const value = valueInput?.value.trim();
+
+        // Only add the header if both name and value are present
+        if (name && value) {
+          headers[name] = value;
+        }
+
+        return headers;
+      },
+      {} as Record<string, string>,
+    );
+  }
+
   clearConsoleBtn.addEventListener('click', () => {
     debugContent.innerHTML = '';
     Object.keys(rawLogStore).forEach(key => delete rawLogStore[key]);
@@ -154,10 +224,19 @@ document.addEventListener('DOMContentLoaded', () => {
     chatInput.disabled = true;
     sendBtn.disabled = true;
 
+    // Get custom headers
+    const customHeaders = getCustomHeaders();
+
+    // Prepare request headers
+    const requestHeaders = {
+      'Content-Type': 'application/json',
+      ...customHeaders,
+    };
+
     try {
       const response = await fetch('/agent-card', {
         method: 'POST',
-        headers: {'Content-Type': 'application/json'},
+        headers: requestHeaders,
         body: JSON.stringify({url: agentCardUrl, sid: socket.id}),
       });
       const data = await response.json();
@@ -174,7 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       validationErrorsContainer.innerHTML =
         '<p class="placeholder-text">Initializing client session...</p>';
-      socket.emit('initialize_client', {url: agentCardUrl});
+      socket.emit('initialize_client', {
+        url: agentCardUrl,
+        customHeaders: customHeaders,
+      });
 
       if (data.validation_errors.length > 0) {
         validationErrorsContainer.innerHTML = `<h3>Validation Errors</h3><ul>${data.validation_errors.map((e: string) => `<li>${e}</li>`).join('')}</ul>`;

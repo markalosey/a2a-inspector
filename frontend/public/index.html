@@ -7,14 +7,27 @@
     <title>A2A Inspector</title>
     <link rel="stylesheet" href="/static/styles.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css">
-    <link rel="icon" href="https://google-a2a.github.io/A2A/latest/assets/a2a-logo-black.svg">
+    <link rel="icon" href="https://a2aproject.github.io/A2A/latest/assets/a2a-logo-black.svg">
 </head>
 
 <body>
     <div class="container">
         <h1>A2A Inspector</h1>
         <div class="url-input-container">
-            <input type="text" id="agent-url" placeholder="Enter Agent URL">
+            <input type="text" id="agent-card-url" placeholder="Enter Agent Card URL">
+        </div>
+        <div class="http-headers-container">
+            <div class="http-headers-header" id="http-headers-toggle">
+                <span class="toggle-icon">▼</span> HTTP Headers
+            </div>
+            <div class="http-headers-content" id="http-headers-content">
+                <div id="headers-list">
+                    <!-- Headers will be added here dynamically -->
+                </div>
+                <button id="add-header-btn">+ Add Header</button>
+            </div>
+        </div>
+        <div class="connect-btn-container">
             <button id="connect-btn">Connect</button>
         </div>
         <div id="agent-card-section">
